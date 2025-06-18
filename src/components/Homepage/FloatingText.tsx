@@ -6,6 +6,7 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { MathUtils } from 'three';
 import { GlitchEffect } from './GlitchEffect';
+import { useTheme } from './ThemeContext';
 
 interface LetterProps {
     offsetX: number;
@@ -17,16 +18,15 @@ interface LetterProps {
     opacity: number;
 }
 
-interface FloatingTextProps {
-    isJapanese: boolean;
-}
 
-export default function FloatingText({ isJapanese }: FloatingTextProps) {
+export default function FloatingText({ isJapanese }:{ isJapanese: boolean }) {
     const textRef = useRef<THREE.Group>(null);
     const [transitionProgress, setTransitionProgress] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(true);
     const [letterStates, setLetterStates] = useState<LetterProps[]>([]);
     const [cameraShakeIntensity, setCameraShakeIntensity] = useState(0);
+
+    const { theme } = useTheme();
 
     const japaneseLetters = useMemo(() => "タウシフ".split(''), []);
     const englishLetters = useMemo(() => "TAUSIF".split(''), []);
@@ -74,7 +74,7 @@ export default function FloatingText({ isJapanese }: FloatingTextProps) {
     useFrame(({ camera }) => {
         const glitchFactor = 1 - transitionProgress;
 
-        setCameraShakeIntensity(glitchFactor * 0.05);
+        setCameraShakeIntensity(glitchFactor * 0.03);
 
         if (textRef.current) {
             const direction = new THREE.Vector3();
@@ -120,8 +120,8 @@ export default function FloatingText({ isJapanese }: FloatingTextProps) {
                             };
 
                             const basePosition = isJapanese
-                                ? index * 0.5 // Adjust spacing for Japanese
-                                : index * 0.5 - (currentLetters.length - 1) * 0.25; // Adjust spacing for English
+                                ? index * 0.5
+                                : index * 0.5 - (currentLetters.length - 1) * 0.25; //spacing for ENglish
 
                             return (
                                 <Text3D
@@ -142,12 +142,12 @@ export default function FloatingText({ isJapanese }: FloatingTextProps) {
                                     ]}
                                 >
                                     {letter}
-                                    <meshStandardMaterial
-                                        color="#ffffff"
-                                        emissive="#00ff95"
+                                    <meshLambertMaterial
+                                        color={theme.foreground}
+                                        emissive={theme.accent}
                                         emissiveIntensity={1.5 * (1 - transitionProgress)}
-                                        metalness={0.8}
-                                        roughness={0.2}
+                                        metalness={0.5}
+                                        roughness={0.6}
                                         transparent
                                         opacity={letterState.opacity}
                                     />

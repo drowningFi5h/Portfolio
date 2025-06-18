@@ -1,4 +1,3 @@
-// scene.tsx
 'use client';
 
 import { Canvas } from '@react-three/fiber';
@@ -9,12 +8,13 @@ import Particles from './Particles';
 import GlowingObjects from './GlowingObjects';
 import FloatingText from './FloatingText';
 import { useState, useEffect } from 'react';
-import { ThemeProvider } from './ThemeContext';
+import { ThemeProvider, useTheme } from './ThemeContext';
 import ThemeSwitcher from './ThemeSwitcher';
 
-export default function Scene() {
+function ThemedSceneContent() {
     const [isJapanese, setIsJapanese] = useState(true);
     const [transitionKey, setTransitionKey] = useState(0);
+    const { theme } = useTheme();
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -26,31 +26,38 @@ export default function Scene() {
     }, []);
 
     return (
+        <div style={{ width: '100vw', height: '100vh' }}>
+            <ThemeSwitcher />
+            <Canvas shadows>
+                <color attach="background" args={[theme.background]} />
+                <PerspectiveCamera
+                    makeDefault
+                    position={[6, 1, 0]}
+                    fov={75}
+                />
+                <Fog />
+                <Lights />
+                <Particles />
+                <GlowingObjects />
+                <FloatingText key={transitionKey} isJapanese={isJapanese} />
+                <OrbitControls
+                    enableZoom={true}
+                    enablePan={false}
+                    autoRotate
+                    autoRotateSpeed={1}
+                    target={[0, 0, 0]}
+                    maxPolarAngle={Math.PI}
+                    minPolarAngle={0}
+                />
+            </Canvas>
+        </div>
+    );
+}
+
+export default function Scene() {
+    return (
         <ThemeProvider>
-            <div style={{ width: '100vw', height: '100vh' }}>
-                <ThemeSwitcher />
-                <Canvas shadows>
-                    <PerspectiveCamera
-                        makeDefault
-                        position={[5, 0, 0]}
-                        fov={75}
-                    />
-                    <Fog />
-                    <Lights />
-                    <Particles />
-                    <GlowingObjects />
-                    <FloatingText key={transitionKey} isJapanese={isJapanese} />
-                    <OrbitControls
-                        enableZoom={true}
-                        enablePan={false}
-                        autoRotate
-                        autoRotateSpeed={1}
-                        target={[0, 0, 0]}
-                        maxPolarAngle={Math.PI}
-                        minPolarAngle={0}
-                    />
-                </Canvas>
-            </div>
+            <ThemedSceneContent />
         </ThemeProvider>
     );
 }

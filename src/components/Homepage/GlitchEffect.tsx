@@ -1,4 +1,3 @@
-// GlitchEffect.tsx
 import React, { useRef, useMemo, useEffect } from 'react';
 import { extend, useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -14,7 +13,7 @@ const GlitchShader = {
         'rgbShift': { value: new THREE.Vector2(0, 0) },
         'time': { value: 0.0 }
     },
-    vertexShader: /* glsl */`
+    vertexShader: `
         varying vec2 vUv;
         void main() {
             vUv = uv;

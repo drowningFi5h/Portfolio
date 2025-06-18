@@ -1,4 +1,3 @@
-// ThemeContext.tsx
 'use client';
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
@@ -13,30 +12,29 @@ interface Theme {
 
 interface ThemeContextProps {
     theme: Theme;
-    setTheme: (theme: Theme) => void;
-    toggleTheme: () => void;
+    setTheme: (themeName: keyof typeof themes) => void;
 }
 
-const darkTheme: Theme = {
-    background: '#121212',
-    foreground: '#ffffff',
-    accent: '#00ff95',
-    secondary: '#7000ff',
-    fog: '#1e1e1e',
-};
-
-const lightTheme: Theme = {
-    background: '#f5f5f5',
-    foreground: '#262626',
-    accent: '#007bff',
-    secondary: '#6c757d',
-    fog: '#e9ecef',
+const themes = {
+    dark: {
+        background: '#121212',
+        foreground: '#ffffff',
+        accent: '#29D6C5',
+        secondary: '#7000ff',
+        fog: '#ffffff',
+    },
+    light: {
+        background: '#f5f5f5',
+        foreground: '#262626',
+        accent: '#007bff',
+        secondary: '#6c757d',
+        fog: '#aaaaaa',
+    },
 };
 
 const ThemeContext = createContext<ThemeContextProps>({
-    theme: darkTheme,
+    theme: themes.dark,
     setTheme: () => {},
-    toggleTheme: () => {},
 });
 
 interface ThemeProviderProps {
@@ -44,18 +42,14 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-    const [theme, setThemeState] = useState<Theme>(darkTheme);
+    const [theme, setThemeState] = useState<Theme>(themes.dark);
 
-    const setTheme = (newTheme: Theme) => {
-        setThemeState(newTheme);
-    };
-
-    const toggleTheme = () => {
-        setThemeState((prevTheme) => (prevTheme === darkTheme ? lightTheme : darkTheme));
+    const setTheme = (themeName: keyof typeof themes) => {
+        setThemeState(themes[themeName]);
     };
 
     return (
-        <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+        <ThemeContext.Provider value={{ theme, setTheme }}>
             {children}
         </ThemeContext.Provider>
     );
