@@ -26,7 +26,7 @@ const themes = {
     light: {
         background: '#f5f5f5',
         foreground: '#262626',
-        accent: '#007bff',
+        accent: '#e57536',
         secondary: '#6c757d',
         fog: '#aaaaaa',
     },

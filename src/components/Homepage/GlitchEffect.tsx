@@ -1,8 +1,9 @@
+// src/components/Homepage/GlitchEffect.tsx
 import React, { useRef, useMemo, useEffect } from 'react';
 import { extend, useFrame, useThree } from '@react-three/fiber';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { WebGLRenderTarget } from 'three';
 import * as THREE from 'three';
 

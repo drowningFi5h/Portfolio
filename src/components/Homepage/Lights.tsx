@@ -37,7 +37,7 @@ export default function Lights() {
                         position={[0, 4, 4]}
                         angle={0.6}
                         penumbra={0.5}
-                        intensity={60}
+                        intensity={200}
                         color={theme.accent}
                         target={textTarget}
                         castShadow

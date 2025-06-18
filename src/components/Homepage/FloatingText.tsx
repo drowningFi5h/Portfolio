@@ -1,58 +1,82 @@
+// src/components/Homepage/FloatingText.tsx
 'use client';
 
-import { Text3D, Center } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { useRef, useState, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
 import { MathUtils } from 'three';
 import { GlitchEffect } from './GlitchEffect';
 import { useTheme } from './ThemeContext';
 
-interface LetterProps {
-    offsetX: number;
-    offsetY: number;
-    offsetZ: number;
-    rotationX: number;
-    rotationY: number;
-    rotationZ: number;
-    opacity: number;
-}
+export default function FloatingText({ isJapanese }: { isJapanese: boolean }) {
+    const particlesRef = useRef<THREE.Points>(null);
+    const { theme } = useTheme();
+    const { viewport } = useThree();
+    const mousePosition = useRef(new THREE.Vector3(10000, 10000, 10000)).current;
 
-
-export default function FloatingText({ isJapanese }:{ isJapanese: boolean }) {
-    const textRef = useRef<THREE.Group>(null);
     const [transitionProgress, setTransitionProgress] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(true);
-    const [letterStates, setLetterStates] = useState<LetterProps[]>([]);
-    const [cameraShakeIntensity, setCameraShakeIntensity] = useState(0);
+    const [isInitialized, setIsInitialized] = useState(false);
 
-    const { theme } = useTheme();
+    const fontEn = useLoader(FontLoader, '/fonts/Vanger_Regular.json');
+    const fontJp = useLoader(FontLoader, '/fonts/Noto Sans JP Thin_Regular.json');
 
-    const japaneseLetters = useMemo(() => "タウシフ".split(''), []);
-    const englishLetters = useMemo(() => "TAUSIF".split(''), []);
-    const currentLetters = useMemo(() => (isJapanese ? japaneseLetters : englishLetters), [isJapanese, japaneseLetters, englishLetters]);
+    const particleCount = 4000;
+    const [targetPositions, setTargetPositions] = useState<Float32Array | null>(null);
+    const currentPositionsRef = useRef<Float32Array>(new Float32Array(particleCount * 3));
+
+    const textOptions = useMemo(() => ({
+        font: isJapanese ? fontJp : fontEn,
+        size: isJapanese ? 1.5 : 2,
+        height: 0.01,
+        curveSegments: 12,
+        bevelEnabled: false,
+        // bevelThickness: 0.01,
+        bevelSize: 0.02,
+        bevelOffset: 0,
+        bevelSegments: 5,
+    }), [isJapanese, fontEn, fontJp]);
+
+    const textToRender = isJapanese ? 'タウシフ' : 'TAUSIF';
 
     useEffect(() => {
-        setLetterStates(
-            currentLetters.map(() => ({
-                offsetX: 0,
-                offsetY: 0,
-                offsetZ: 0,
-                rotationX: 0,
-                rotationY: 0,
-                rotationZ: 0,
-                opacity: 1,
-            }))
-        );
-    }, [currentLetters]);
+        const geometry = new TextGeometry(textToRender, textOptions);
+        geometry.center();
+
+        const mesh = new THREE.Mesh(geometry);
+        const sampler = new MeshSurfaceSampler(mesh).build();
+
+        const newTargetPositions = new Float32Array(particleCount * 3);
+        const tempPosition = new THREE.Vector3();
+
+        for (let i = 0; i < particleCount; i++) {
+            sampler.sample(tempPosition);
+            newTargetPositions.set([tempPosition.x, tempPosition.y, tempPosition.z], i * 3);
+        }
+
+        if (!isInitialized) {
+            currentPositionsRef.current.set(newTargetPositions);
+            if (particlesRef.current) {
+                particlesRef.current.geometry.attributes.position.needsUpdate = true;
+            }
+            setIsInitialized(true);
+        }
+
+        setTargetPositions(newTargetPositions);
+        setIsTransitioning(true);
+        setTransitionProgress(0);
+    }, [textToRender, textOptions, isInitialized]);
 
     useEffect(() => {
         let animationFrame: number;
         const animateTransition = () => {
             if (isTransitioning) {
                 setTransitionProgress((prev) => {
-                    const newProgress = MathUtils.lerp(prev, 1, 0.08);
-                    if (newProgress >= 0.99) {
+                    const newProgress = MathUtils.lerp(prev, 1, 0.05);
+                    if (newProgress > 0.99) {
                         setIsTransitioning(false);
                         return 1;
                     }
@@ -61,102 +85,90 @@ export default function FloatingText({ isJapanese }:{ isJapanese: boolean }) {
             }
             animationFrame = requestAnimationFrame(animateTransition);
         };
-
         animateTransition();
         return () => cancelAnimationFrame(animationFrame);
     }, [isTransitioning]);
 
-    useEffect(() => {
-        setIsTransitioning(true);
-        setTransitionProgress(0);
-    }, [isJapanese]);
+    useFrame((state, delta) => {
+        const { pointer, camera } = state;
+        mousePosition.x = (pointer.x * viewport.width) / 2;
+        mousePosition.y = (pointer.y * viewport.height) / 2;
 
-    useFrame(({ camera }) => {
-        const glitchFactor = 1 - transitionProgress;
+        if (particlesRef.current && targetPositions && currentPositionsRef.current) {
+            const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
+            const currentPositions = currentPositionsRef.current;
 
-        setCameraShakeIntensity(glitchFactor * 0.03);
-
-        if (textRef.current) {
+            const textGroup = particlesRef.current;
             const direction = new THREE.Vector3();
             camera.getWorldDirection(direction);
             const angle = Math.atan2(direction.x, direction.z);
-            textRef.current.rotation.y = angle + Math.PI;
-        }
+            textGroup.rotation.y = MathUtils.lerp(textGroup.rotation.y, angle + Math.PI, 0.1);
 
-        camera.position.x += MathUtils.randFloatSpread(cameraShakeIntensity);
-        camera.position.y += MathUtils.randFloatSpread(cameraShakeIntensity);
-        camera.position.z += MathUtils.randFloatSpread(cameraShakeIntensity);
+            const tempPosition = new THREE.Vector3();
+            const repulsionRadius = 1.5;
+            const repulsionStrength = 5;
+            const returnStrength = 0.05;
+            const glitchFactor = 1 - transitionProgress;
 
-        if (isTransitioning) {
-            setLetterStates((prevStates) =>
-                prevStates.map(() => ({
-                    offsetX: MathUtils.randFloatSpread(glitchFactor * 0.15),
-                    offsetY: MathUtils.randFloatSpread(glitchFactor * 0.15),
-                    offsetZ: MathUtils.randFloatSpread(glitchFactor * 0.05),
-                    rotationX: MathUtils.randFloatSpread(glitchFactor * 0.5),
-                    rotationY: MathUtils.randFloatSpread(glitchFactor * 0.5),
-                    rotationZ: MathUtils.randFloatSpread(glitchFactor * 0.5),
-                    opacity: Math.random() > 0.5 ? 1 : MathUtils.randFloat(0.1, 0.8),
-                }))
-            );
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+
+                const targetX = targetPositions[i3];
+                const targetY = targetPositions[i3 + 1];
+                const targetZ = targetPositions[i3 + 4];
+
+                currentPositions[i3] = MathUtils.lerp(currentPositions[i3], targetX, returnStrength);
+                currentPositions[i3 + 1] = MathUtils.lerp(currentPositions[i3 + 1], targetY, returnStrength);
+                currentPositions[i3 + 2] = MathUtils.lerp(currentPositions[i3 + 2], targetZ, returnStrength);
+
+                tempPosition.set(currentPositions[i3], currentPositions[i3 + 1], currentPositions[i3 + 2]);
+                const distanceToMouse = tempPosition.distanceTo(mousePosition);
+
+                let finalX = currentPositions[i3];
+                let finalY = currentPositions[i3 + 1];
+                const finalZ = currentPositions[i3 + 2];
+
+                if (distanceToMouse < repulsionRadius) {
+                    const repulsionForce = (repulsionRadius - distanceToMouse) / repulsionRadius;
+                    const repulsionVec = tempPosition.clone().sub(mousePosition).normalize();
+                    finalX += repulsionVec.x * repulsionForce * repulsionStrength * delta;
+                    finalY += repulsionVec.y * repulsionForce * repulsionStrength * delta;
+                }
+
+                if (isTransitioning) {
+                    finalX += MathUtils.randFloatSpread(glitchFactor * 0.1);
+                    finalY += MathUtils.randFloatSpread(glitchFactor * 0.1);
+
+                }
+
+                positions[i3] = finalX;
+                positions[i3 + 1] = finalY;
+                positions[i3 + 2] = finalZ;
+            }
+            particlesRef.current.geometry.attributes.position.needsUpdate = true;
         }
     });
 
     return (
         <>
             <GlitchEffect glitchIntensity={1 - transitionProgress} />
-            <group>
-                <Center ref={textRef}>
-                    <group>
-                        {currentLetters.map((letter, index) => {
-                            const letterState = letterStates[index] || {
-                                offsetX: 0,
-                                offsetY: 0,
-                                offsetZ: 0,
-                                rotationX: 0,
-                                rotationY: 0,
-                                rotationZ: 0,
-                                opacity: 1,
-                            };
-
-                            const basePosition = isJapanese
-                                ? index * 0.5
-                                : index * 0.5 - (currentLetters.length - 1) * 0.25; //spacing for ENglish
-
-                            return (
-                                <Text3D
-                                    key={`text-${index}`}
-                                    font={isJapanese ? "/fonts/Noto Sans JP Thin_Regular.json" : "/fonts/Vanger_Regular.json"}
-                                    size={0.5}
-                                    height={0.2}
-                                    curveSegments={12}
-                                    position={[
-                                        basePosition + letterState.offsetX,
-                                        letterState.offsetY,
-                                        letterState.offsetZ,
-                                    ]}
-                                    rotation={[
-                                        letterState.rotationX,
-                                        letterState.rotationY,
-                                        letterState.rotationZ,
-                                    ]}
-                                >
-                                    {letter}
-                                    <meshLambertMaterial
-                                        color={theme.foreground}
-                                        emissive={theme.accent}
-                                        emissiveIntensity={1.5 * (1 - transitionProgress)}
-                                        metalness={0.5}
-                                        roughness={0.6}
-                                        transparent
-                                        opacity={letterState.opacity}
-                                    />
-                                </Text3D>
-                            );
-                        })}
-                    </group>
-                </Center>
-            </group>
+            <points ref={particlesRef}>
+                <bufferGeometry>
+                    <bufferAttribute
+                        attach="attributes-position"
+                        args={[currentPositionsRef.current, 3]}
+                    />
+                </bufferGeometry>
+                <pointsMaterial
+                    size={0.05}
+                    color={theme.accent}
+                    transparent
+                    opacity={0.7}
+                    blending={THREE.AdditiveBlending}
+                    sizeAttenuation
+                    depthWrite={false}
+                />
+            </points>
         </>
     );
 }
