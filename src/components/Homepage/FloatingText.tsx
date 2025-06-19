@@ -8,7 +8,6 @@ import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
 import { MathUtils } from 'three';
-import { GlitchEffect } from './GlitchEffect';
 import { useTheme } from './ThemeContext';
 
 export default function FloatingText({ isJapanese }: { isJapanese: boolean }) {
@@ -17,30 +16,27 @@ export default function FloatingText({ isJapanese }: { isJapanese: boolean }) {
     const { viewport } = useThree();
     const mousePosition = useRef(new THREE.Vector3(10000, 10000, 10000)).current;
 
-    const [transitionProgress, setTransitionProgress] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
 
     const fontEn = useLoader(FontLoader, '/fonts/Vanger_Regular.json');
-    const fontJp = useLoader(FontLoader, '/fonts/Noto Sans JP Thin_Regular.json');
+    const fontJp = useLoader(FontLoader, '/fonts/Chinese Cally TFB_Regular.json');
 
-    const particleCount = 4000;
+    const particleCount = 3000;
     const [targetPositions, setTargetPositions] = useState<Float32Array | null>(null);
     const currentPositionsRef = useRef<Float32Array>(new Float32Array(particleCount * 3));
 
     const textOptions = useMemo(() => ({
         font: isJapanese ? fontJp : fontEn,
-        size: isJapanese ? 1.5 : 2,
+        size: isJapanese ? 0.5 : 0.5,
         height: 0.01,
         curveSegments: 12,
         bevelEnabled: false,
-        // bevelThickness: 0.01,
-        bevelSize: 0.02,
+        bevelSize: 0,
         bevelOffset: 0,
-        bevelSegments: 5,
+        bevelSegments: 1,
     }), [isJapanese, fontEn, fontJp]);
 
-    const textToRender = isJapanese ? 'タウシフ' : 'TAUSIF';
+    const textToRender = isJapanese ? 'T A U S I F' : 'T A U S I F';
 
     useEffect(() => {
         const geometry = new TextGeometry(textToRender, textOptions);
@@ -54,7 +50,7 @@ export default function FloatingText({ isJapanese }: { isJapanese: boolean }) {
 
         for (let i = 0; i < particleCount; i++) {
             sampler.sample(tempPosition);
-            newTargetPositions.set([tempPosition.x, tempPosition.y, tempPosition.z], i * 3);
+            newTargetPositions.set([tempPosition.x, tempPosition.y, 0], i * 3);
         }
 
         if (!isInitialized) {
@@ -66,28 +62,7 @@ export default function FloatingText({ isJapanese }: { isJapanese: boolean }) {
         }
 
         setTargetPositions(newTargetPositions);
-        setIsTransitioning(true);
-        setTransitionProgress(0);
     }, [textToRender, textOptions, isInitialized]);
-
-    useEffect(() => {
-        let animationFrame: number;
-        const animateTransition = () => {
-            if (isTransitioning) {
-                setTransitionProgress((prev) => {
-                    const newProgress = MathUtils.lerp(prev, 1, 0.05);
-                    if (newProgress > 0.99) {
-                        setIsTransitioning(false);
-                        return 1;
-                    }
-                    return newProgress;
-                });
-            }
-            animationFrame = requestAnimationFrame(animateTransition);
-        };
-        animateTransition();
-        return () => cancelAnimationFrame(animationFrame);
-    }, [isTransitioning]);
 
     useFrame((state, delta) => {
         const { pointer, camera } = state;
@@ -105,17 +80,16 @@ export default function FloatingText({ isJapanese }: { isJapanese: boolean }) {
             textGroup.rotation.y = MathUtils.lerp(textGroup.rotation.y, angle + Math.PI, 0.1);
 
             const tempPosition = new THREE.Vector3();
-            const repulsionRadius = 1.5;
+            const repulsionRadius = 5;
             const repulsionStrength = 5;
             const returnStrength = 0.05;
-            const glitchFactor = 1 - transitionProgress;
 
             for (let i = 0; i < particleCount; i++) {
                 const i3 = i * 3;
 
                 const targetX = targetPositions[i3];
                 const targetY = targetPositions[i3 + 1];
-                const targetZ = targetPositions[i3 + 4];
+                const targetZ = targetPositions[i3 + 2];
 
                 currentPositions[i3] = MathUtils.lerp(currentPositions[i3], targetX, returnStrength);
                 currentPositions[i3 + 1] = MathUtils.lerp(currentPositions[i3 + 1], targetY, returnStrength);
@@ -135,12 +109,6 @@ export default function FloatingText({ isJapanese }: { isJapanese: boolean }) {
                     finalY += repulsionVec.y * repulsionForce * repulsionStrength * delta;
                 }
 
-                if (isTransitioning) {
-                    finalX += MathUtils.randFloatSpread(glitchFactor * 0.1);
-                    finalY += MathUtils.randFloatSpread(glitchFactor * 0.1);
-
-                }
-
                 positions[i3] = finalX;
                 positions[i3 + 1] = finalY;
                 positions[i3 + 2] = finalZ;
@@ -150,25 +118,22 @@ export default function FloatingText({ isJapanese }: { isJapanese: boolean }) {
     });
 
     return (
-        <>
-            <GlitchEffect glitchIntensity={1 - transitionProgress} />
-            <points ref={particlesRef}>
-                <bufferGeometry>
-                    <bufferAttribute
-                        attach="attributes-position"
-                        args={[currentPositionsRef.current, 3]}
-                    />
-                </bufferGeometry>
-                <pointsMaterial
-                    size={0.05}
-                    color={theme.accent}
-                    transparent
-                    opacity={0.7}
-                    blending={THREE.AdditiveBlending}
-                    sizeAttenuation
-                    depthWrite={false}
+        <points ref={particlesRef}>
+            <bufferGeometry>
+                <bufferAttribute
+                    attach="attributes-position"
+                    args={[currentPositionsRef.current, 3]}
                 />
-            </points>
-        </>
+            </bufferGeometry>
+            <pointsMaterial
+                size={0.05}
+                color={theme.accent}
+                transparent
+                opacity={0.7}
+                blending={THREE.AdditiveBlending}
+                sizeAttenuation
+                depthWrite={false}
+            />
+        </points>
     );
 }

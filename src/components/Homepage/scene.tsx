@@ -1,3 +1,4 @@
+// src/components/Homepage/scene.tsx
 'use client';
 
 import { Canvas } from '@react-three/fiber';
@@ -13,13 +14,11 @@ import ThemeSwitcher from './ThemeSwitcher';
 
 function ThemedSceneContent() {
     const [isJapanese, setIsJapanese] = useState(true);
-    const [transitionKey, setTransitionKey] = useState(0);
     const { theme } = useTheme();
 
     useEffect(() => {
         const intervalId = setInterval(() => {
             setIsJapanese((prev) => !prev);
-            setTransitionKey((prevKey) => prevKey + 1);
         }, 5000);
 
         return () => clearInterval(intervalId);
@@ -39,7 +38,7 @@ function ThemedSceneContent() {
                 <Lights />
                 <Particles />
                 <GlowingObjects />
-                <FloatingText key={transitionKey} isJapanese={isJapanese} />
+                <FloatingText isJapanese={isJapanese} />
                 <OrbitControls
                     enableZoom={true}
                     enablePan={false}
