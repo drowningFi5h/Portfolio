@@ -21,13 +21,22 @@ export default function Lights() {
                 position={[15, 15, 5]}
                 angle={0.3}
                 penumbra={1}
-                intensity={2}
+                intensity={5}
                 color={theme.secondary}
                 castShadow
             />
+            <spotLight
+                position={[0, 6, 2]}
+                angle={0.4}
+                penumbra={0.8}
+                intensity={80}
+                color={theme.accent}
+                target={textTarget}
+                castShadow
+            />
             <pointLight
-                position={[-10, -5, -5]}
-                intensity={1.5}
+                position={[0, 2, -4]}
+                intensity={10}
                 color={theme.accent}
             />
             {isDarkMode && (

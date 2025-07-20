@@ -1,4 +1,4 @@
-// src/components/Homepage/Particles.tsx
+// src/components/Effects/Particles.tsx
 'use client';
 
 import { useMemo, useRef } from 'react';

@@ -1,7 +1,7 @@
 'use client';
 
-import Scene from '@/components/Homepage/scene';
+import SceneManager from '@/components/Portfolio/SceneManager';
 
 export default function HomePage() {
-    return <Scene />;
+    return <SceneManager />;
 }

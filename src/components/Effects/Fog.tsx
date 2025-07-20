@@ -1,4 +1,4 @@
-// src/components/Homepage/Fog.tsx
+// src/components/Effects/Fog.tsx
 'use client';
 
 import { useMemo, useRef, useEffect } from 'react';

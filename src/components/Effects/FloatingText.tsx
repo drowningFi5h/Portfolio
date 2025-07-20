@@ -28,7 +28,7 @@ export default function FloatingText({ isJapanese }:{ isJapanese: boolean }) {
 
     const { theme } = useTheme();
 
-    const japaneseLetters = useMemo(() => "タウシフ".split(''), []);
+    const japaneseLetters = useMemo(() => "TAUSIF".split(''), []);
     const englishLetters = useMemo(() => "TAUSIF".split(''), []);
     const currentLetters = useMemo(() => (isJapanese ? japaneseLetters : englishLetters), [isJapanese, japaneseLetters, englishLetters]);
 
@@ -126,7 +126,7 @@ export default function FloatingText({ isJapanese }:{ isJapanese: boolean }) {
                             return (
                                 <Text3D
                                     key={`text-${index}`}
-                                    font={isJapanese ? "/fonts/Noto Sans JP Thin_Regular.json" : "/fonts/Vanger_Regular.json"}
+                                    font={isJapanese ? "/fonts/Chinese Cally TFB_Regular.json" : "/fonts/VALORANT_Regular.json"}
                                     size={0.5}
                                     height={0.2}
                                     curveSegments={12}
@@ -146,7 +146,7 @@ export default function FloatingText({ isJapanese }:{ isJapanese: boolean }) {
                                         color={theme.foreground}
                                         emissive={theme.accent}
                                         emissiveIntensity={1.5 * (1 - transitionProgress)}
-                                        metalness={0.5}
+                                        metalness={0.8}
                                         roughness={0.6}
                                         transparent
                                         opacity={letterState.opacity}
